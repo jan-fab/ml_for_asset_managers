@@ -2,6 +2,9 @@
 
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
 
 ######################################################
 # From "2. Denoising and Detoning.ipynb"
@@ -60,3 +63,70 @@ def calculate_returns(chosen_assets = None, min_obs_threshold = None, remove_na 
 
     return df_returns
 
+######################################################
+# From "3. Distance Metrics.ipynb"
+######################################################
+
+
+
+######################################################
+# From "4. Optimal Clustering.ipynb"
+######################################################
+
+def clustering_predictions_strength(data, max_n_clusters = 10, tries_per_n_clusters = 100, test_size=0.5, plot=True):
+
+    '''
+    We divide the dataset used for clustering into a training set and a test set. We then compare the cluster 
+    assignments of the test set obtained in two ways:
+    - By predicting with the model trained on the training set.
+    - By fitting a new clustering model directly on the test set.
+    The more appropriate the chosen number of clusters is, the higher the percentage of observations that 
+    should be assigned to the same clusters by both methods.
+
+    This method is inspired by The Hundred-Page Machine Learning Book by Andriy Burkov, Section 9.2.3.
+    '''
+
+    clusters_stats = []
+
+    for n_clusters in range(2, max_n_clusters + 1):
+
+        cluster_scores = []
+
+        for i in range(tries_per_n_clusters):
+
+            train_df, test_df = train_test_split(data, test_size=test_size)
+
+            model_train = KMeans(n_clusters = n_clusters)
+            model_train = model_train.fit(train_df)
+
+            model_test = KMeans(n_clusters = n_clusters)
+            model_test = model_test.fit(test_df)
+
+            test_lables_from_model_train = model_train.predict(test_df)
+
+            for n_clust in np.unique(model_test.labels_):
+                labels_in_test_cluster = test_lables_from_model_train[model_test.labels_==n_clust]
+                _, counts = np.unique(labels_in_test_cluster, return_counts=True)
+                cluster_score = np.sum(counts**2)/len(labels_in_test_cluster)**2
+                cluster_scores.append(cluster_score)
+
+        clusters_stats.append({'n_clusters': n_clusters,
+                               'min_score': np.min(cluster_scores),
+                               'mean_score': np.mean(cluster_scores)})
+        
+    if plot:
+        x = [c["n_clusters"] for c in clusters_stats]
+        y = [c["min_score"] for c in clusters_stats]
+        z = [c["mean_score"] for c in clusters_stats]
+
+        plt.figure(figsize=(8, 5))
+        plt.plot(x, y, marker='o', linestyle='-', label='Min cluster score', color='blue')
+        plt.plot(x, z, marker='s', linestyle='--', label='Mean cluster score', color='orange')
+        plt.title('Number of Clusters - Prediction Strength Comparison')
+        plt.xlabel('Number of Clusters')
+        plt.ylabel('Score')
+        plt.grid(True)
+        plt.legend()
+        plt.show()
+
+    return clusters_stats

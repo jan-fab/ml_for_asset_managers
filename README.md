@@ -16,4 +16,6 @@ The code is organized into the following key areas, following the chapters of th
 
 * Portfolio Construction – Applying ML techniques to portfolio optimization.
 
-All code and analysis are authored by me.
+All code and analysis are written by me.
+
+License: Creative Commons Attribution 4.0 (CC BY 4.0)
